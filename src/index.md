@@ -49,12 +49,6 @@ WHERE Glosa = ${selectedDivision}
 ORDER BY Año, Mes, División,Glosa
 ```
 
-```sql id=ipc_analitico 
-SELECT Año as año, Mes as mes, Glosa as item, Índice as indice
-FROM ipc_analiticos
-WHERE Glosa = ${selectedAnalitico}
-ORDER BY Año, Mes,Glosa
-```
 ```sql id=ipc_item 
 SELECT Ano as año, Mes as mes, Indice as indice
 FROM ipc_items
@@ -70,12 +64,15 @@ const opcionesFechaReferencia = [
   {label: "2019", value:"2019-12-01"},
   {label: "2023", value:"2023-12-01"},
 ]
-const fechaReferencia = view(Inputs.radio(opcionesFechaReferencia,{label: "Año de referencia (Diciembre)", value: opcionesFechaReferencia[0], format:d => d.label}));
+const fechaReferencia = view(Inputs.radio(opcionesFechaReferencia,{label: "Año de referencia (Diciembre)", value: opcionesFechaReferencia[3], format:d => d.label}));
 ```
 
 
-## Índice de precios ${selectedItem} vs Índice general
-### Fecha de referencia (${moment(dataNormalizada_item.referenceDate).format(`MMM YYYY`)}) = 100
+# Inflación (Índice de precios al consumidor) en Chile
+## 
+
+
+## Índice de precios por item
 
 ```js
 const optionsDivision = _.chain([...items_division]).map(d => d.division).uniq().sort().value()
@@ -87,34 +84,27 @@ const optionsItem = _.chain([...items_division]).filter(d => d.division == selec
 const selectedItem = view(Inputs.select(optionsItem, {value: optionsItem[0], label: "Item"}));
 ```
 
+**Índice de precios ${selectedItem} vs Índice general**  
+*Fecha de referencia (${moment(dataNormalizada_item.referenceDate).format(`MMM YYYY`)}) = 100*
+
+
 ```js
 const dataNormalizada_item = normalizeData({dataset1: data_ipc_general, dataset2:data_ipc_item, date:fechaReferencia.value})
 display(plotData({dataPlot :dataNormalizada_item.data, refdate:dataNormalizada_item.referenceDate}));
 ```
 
+## Índice de precios por división (agrupación de items)
 
 ```js
 const selectedDivision = view(Inputs.select([...divisiones].map(d => d.division), {value: [...divisiones][0].division, label: "División"}));
 ```
 
-## Índice de precios ${selectedDivision} vs Índice general
-### Fecha de referencia (${moment(dataNormalizada_division.referenceDate).format(`MMM YYYY`)}) = 100
+**Índice de precios ${selectedDivision} vs Índice general**  
+*Fecha de referencia (${moment(dataNormalizada_division.referenceDate).format(`MMM YYYY`)}) = 100*
 
 ```js
 const dataNormalizada_division = normalizeData({dataset1: data_ipc_general, dataset2:data_ipc_division, date:fechaReferencia.value})
 display(plotData({dataPlot :dataNormalizada_division.data, refdate:dataNormalizada_division.referenceDate}));
-```
-
-
-```js
-const selectedAnalitico = view(Inputs.select([...analiticos].map(d => d.analitico), {value: [...analiticos][0].analitico, label: "Analítico"}));
-```
-
-## Índice de precios ${selectedAnalitico} vs Índice general
-### Fecha de referencia (${moment(dataNormalizada_analitico.referenceDate).format(`MMM YYYY`)}) = 100
-```js
-const dataNormalizada_analitico = normalizeData({dataset1: data_ipc_general, dataset2:data_ipc_analitico, date:fechaReferencia.value})
-display(plotData({dataPlot :dataNormalizada_analitico.data, refdate:dataNormalizada_analitico.referenceDate}));
 ```
 
 
@@ -152,17 +142,6 @@ const data_ipc_division = _.chain([...ipc_division])
 .sortBy(d => d.date)
 .value();
 
-const data_ipc_analitico = _.chain([...ipc_analitico])
-.map(d => ({
-  date: moment(`${d.año}-${d.mes}`,`YYYY-M`).toDate(),
-  año:d.año,
-  mes:d.mes,
-  indice: d.indice,
-  item: d.item
-}))
-.sortBy(d => d.date)
-.value();
-
 ```
 
 
@@ -170,6 +149,7 @@ const data_ipc_analitico = _.chain([...ipc_analitico])
 function plotData({dataPlot = [], refdate= null} = {}) {
     return Plot.plot({
     marginRight:200,
+    x:{grid:true},
     y:{grid:true},
     marks: [
       Plot.ruleX([refdate]),
@@ -234,8 +214,6 @@ function normalizeData({
     referenceDate: _.chain(dataNormalizada).filter(d => d.date >= referenceDate).minBy(d => d.date).value()["date"]
   }
 }
-
-display(normalizeData({dataset1: data_ipc_general, dataset2:data_ipc_item, date:fechaReferencia.value}))
 
 
 ```
